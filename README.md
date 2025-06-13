@@ -1,4 +1,4 @@
-# Sip-Classifier
+# SIP-Classifier
 This repository contains the dataset for the paper "SIP-Classifier: Classifying SIP Signaling Sequences in IMS Using Transformers and Clustering".
 
 ## Cite us
