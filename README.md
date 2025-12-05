@@ -16,7 +16,7 @@ This repository contains the dataset and supporting scripts used in the paper
 	- `LSTM1.py` and `LSTM2.py`: LSTM baseline implementations from the paper [Classification of Abnormal Signaling SIP Dialogs Through Deep Learning (IEEE Access, 2021)](https://ieeexplore.ieee.org/abstract/document/9648193)
 	- `results/`: directory containing the results obtained from running the baseline models on the `sip_dataset.csv`.
 
-- `util/`: utility scripts and small CSVs used for dataset splits, stats, and labeled subsets.
+- `util/`: utility scripts and labeled subsets.
 	- `anomalous.csv`: subset of the `sip_dataset.csv` containing only anomalous signaling flows, without duplicates.
 	- `benign.csv`: subset of the `sip_dataset.csv` containing only benign signaling flows, without duplicates.
 	- `split.py`: helper script to extract the `anomalous.csv` / `benign.csv` subsets.
