@@ -1,0 +1,42 @@
+Benign dialogs (rows):    2823
+Anomalous dialogs (rows): 1305
+Example benign sequence: ['I', 'T', 'I', 'T', 'I', '500', 'A', 'I', 'T', 'I', 'T', 'I', 'T', 'R', 'R', 'R', 'R', 'P', 'P', 'P', 'P', 'P', '200', 'P', '200', 'P', '200', 'P', '200', 'I', '200', 'I', '200', 'I', '200', 'I', '200', 'A', 'A', 'A', 'A', 'U', 'U', 'U', '200', 'U', '200', 'U', 'U', '200', 'U', '200', 'B', 'B', 'B', 'B', 'B', '200', 'B', '200', 'B', '200', 'B', '200']
+Vocabulary size (methods+codes, excl. <PAD>): 27
+Max benign sequence length: 250
+message2idx size: 28
+
+Number of unique benign dialogs: 2273
+Number of unique_int_seqs_benign: 2273
+Example integer benign sequence: [21, 25, 21, 25, 21, 13, 18, 21, 25, 21, 25, 21, 25, 23, 23, 23, 23, 22, 22, 22, 22, 22, 0, 22, 0, 22, 0, 22, 0, 21, 0, 21, 0, 21, 0, 21, 0, 18, 18, 18, 18, 26, 26, 26, 0, 26, 0, 26, 26, 0, 26, 0, 19, 19, 19, 19, 19, 0, 19, 0, 19, 0, 19, 0]
+Number of unique_int_seqs_anom: 903
+Example integer anomalous sequence: [21, 25, 21, 25]
+
+Train benign dialogs: 1818
+Test  benign dialogs: 455
+
+Number of distinct n-grams across TRAIN benign dialogs: 10290
+
+Mean best log-likelihood on TRAIN benign dialogs: -669.553820513604
+Min/Max best train log-likelihood: -1948.3112762818307 -188.0541600092998
+
+=== Experiment 1 – IV.B-like Detection on benign ===
+PD_train (benign) = 0.5622
+Confusion matrix TRAIN (rows=true, cols=pred):
+ [[1022  796]
+ [   0    0]]
+PD_test  (benign) = 0.5363
+Confusion matrix TEST  (rows=true, cols=pred):
+ [[244 211]
+ [  0   0]]
+
+=== Experiment 2/3 – IV.D CLEAN – test benign + anomalous ===
+Confusion Matrix (rows=true [0=benign,1=anom], cols=pred):
+ [[244 211]
+ [780 123]]
+Accuracy=0.2703, Precision(unknown)=0.3683, Recall(unknown)=0.1362, F1(unknown)=0.1989
+
+=== Experiment 2/3 – IV.D FULL – train+test benign + anomalous ===
+Confusion Matrix (rows=true [0=benign,1=anom], cols=pred):
+ [[1266 1007]
+ [ 780  123]]
+Accuracy=0.4373, Precision(unknown)=0.1088, Recall(unknown)=0.1362, F1(unknown)=0.1210
