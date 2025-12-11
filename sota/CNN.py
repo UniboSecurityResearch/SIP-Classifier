@@ -259,18 +259,66 @@ def classify_moments(yhat, lambda_S, lambda_K):
 
 def report_unknown(y_true, y_pred):
     """
-    y_true: 0 for known, -1 for unknown
-    Evaluates metrics for the "known" class.
+    Paper-style evaluation for unknown SIP dialog detection.
+
+    y_true : array of integers
+             0 = known dialog
+            -1 = unknown dialog
+
+    y_pred : array of integers
+             0 = predicted known
+            -1 = predicted unknown
+
+    Returns:
+        cm      : 2x2 confusion matrix
+        rates   : dict with raw TN, FP, FN, TP and normalized tn, fp, fn, tp
+        metrics : dict with specificity, sensitivity, precision, accuracy, f1
     """
+    # True  = known dialog
+    # False = unknown dialog
     y_true_known = (y_true == 0)
     y_pred_known = (y_pred == 0)
 
     cm = confusion_matrix(y_true_known, y_pred_known)
-    acc = accuracy_score(y_true_known,    y_pred_known)
-    prec = precision_score(y_true_known,  y_pred_known, zero_division=0)
-    rec  = recall_score(y_true_known,     y_pred_known, zero_division=0)
-    f1   = f1_score(y_true_known,         y_pred_known, zero_division=0)
-    return cm, acc, prec, rec, f1
+
+    # cm rows: [true unknown, true known], cols: [pred unknown, pred known]
+    TN = cm[0, 0]   # true unknown → predicted unknown
+    FP = cm[0, 1]   # true unknown → predicted known
+    FN = cm[1, 0]   # true known   → predicted unknown
+    TP = cm[1, 1]   # true known   → predicted known
+
+    total_unknown = TN + FP
+    total_known   = TP + FN
+    total_all     = TN + FP + FN + TP
+
+    # Normalized rates
+    tn_rate = TN / total_unknown if total_unknown > 0 else 0.0
+    fp_rate = FP / total_unknown if total_unknown > 0 else 0.0
+    tp_rate = TP / total_known   if total_known   > 0 else 0.0
+    fn_rate = FN / total_known   if total_known   > 0 else 0.0
+
+    # Metrics
+    specificity = tn_rate                  # correct detection of unknown dialogs
+    sensitivity = tp_rate                  # correct detection of known dialogs
+    precision   = TP / (TP + FP) if (TP + FP) > 0 else 0.0
+    accuracy    = (TP + TN) / total_all if total_all > 0 else 0.0
+    f1 = (2 * precision * sensitivity / (precision + sensitivity)
+          if (precision + sensitivity) > 0 else 0.0)
+
+    rates = dict(
+        TN=TN, FP=FP, FN=FN, TP=TP,
+        tn=tn_rate, fp=fp_rate, fn=fn_rate, tp=tp_rate
+    )
+
+    metrics = dict(
+        specificity=specificity,
+        sensitivity=sensitivity,
+        precision=precision,
+        accuracy=accuracy,
+        f1=f1,
+    )
+
+    return cm, rates, metrics
 
 # Compute thresholds on benign TRAIN
 lambda_M, lambda_S, lambda_K = compute_thresholds(cnn_model, X_train)
@@ -287,16 +335,30 @@ yhat_clean = cnn_model.predict(X_eval_clean, batch_size=batch_size)
 y_pred_max_clean     = classify_max_threshold(yhat_clean, lambda_M)
 y_pred_moments_clean = classify_moments(yhat_clean, lambda_S, lambda_K)
 
-cm_max_c, acc_max_c, prec_max_c, rec_max_c, f1_max_c = report_unknown(y_true_clean, y_pred_max_clean)
-cm_mom_c, acc_mom_c, prec_mom_c, rec_mom_c, f1_mom_c = report_unknown(y_true_clean, y_pred_moments_clean)
+cm_max_c, rates_max_c, metrics_max_c = report_unknown(y_true_clean, y_pred_max_clean)
+cm_mom_c, rates_mom_c, metrics_mom_c = report_unknown(y_true_clean, y_pred_moments_clean)
 
 print("\nIV.D – CNN – CLEAN Max-Threshold Classifier")
-print("Confusion Matrix (rows=true known?, cols=pred known?):\n", cm_max_c)
-print(f"Accuracy={acc_max_c:.4f}, Precision={prec_max_c:.4f}, Recall={rec_max_c:.4f}, F1={f1_max_c:.4f}")
+print("Confusion Matrix (rows=true [unknown, known], cols=pred [unknown, known]):\n", cm_max_c)
+print(f"TN={rates_max_c['TN']}, FP={rates_max_c['FP']}, FN={rates_max_c['FN']}, TP={rates_max_c['TP']}")
+print(
+    f"Accuracy={metrics_max_c['accuracy']:.4f}, "
+    f"Precision={metrics_max_c['precision']:.4f}, "
+    f"Sensitivity={metrics_max_c['sensitivity']:.4f}, "
+    f"Specificity={metrics_max_c['specificity']:.4f}, "
+    f"F1={metrics_max_c['f1']:.4f}"
+)
 
 print("\nIV.D – CNN – CLEAN Skew/Kurtosis Classifier")
-print("Confusion Matrix (rows=true known?, cols=pred known?):\n", cm_mom_c)
-print(f"Accuracy={acc_mom_c:.4f}, Precision={prec_mom_c:.4f}, Recall={rec_mom_c:.4f}, F1={f1_mom_c:.4f}")
+print("Confusion Matrix (rows=true [unknown, known], cols=pred [unknown, known]):\n", cm_mom_c)
+print(f"TN={rates_mom_c['TN']}, FP={rates_mom_c['FP']}, FN={rates_mom_c['FN']}, TP={rates_mom_c['TP']}")
+print(
+    f"Accuracy={metrics_mom_c['accuracy']:.4f}, "
+    f"Precision={metrics_mom_c['precision']:.4f}, "
+    f"Sensitivity={metrics_mom_c['sensitivity']:.4f}, "
+    f"Specificity={metrics_mom_c['specificity']:.4f}, "
+    f"F1={metrics_mom_c['f1']:.4f}"
+)
 
 # -------------------------------------------------------------------
 # 10. Extended Unknown Detection (IV.D "full")
@@ -317,13 +379,27 @@ yhat_full = cnn_model.predict(X_eval_full, batch_size=batch_size)
 y_pred_max_full     = classify_max_threshold(yhat_full, lambda_M)
 y_pred_moments_full = classify_moments(yhat_full, lambda_S, lambda_K)
 
-cm_max_f, acc_max_f, prec_max_f, rec_max_f, f1_max_f = report_unknown(y_true_full, y_pred_max_full)
-cm_mom_f, acc_mom_f, prec_mom_f, rec_mom_f, f1_mom_f = report_unknown(y_true_full, y_pred_moments_full)
+cm_max_f, rates_max_f, metrics_max_f = report_unknown(y_true_full, y_pred_max_full)
+cm_mom_f, rates_mom_f, metrics_mom_f = report_unknown(y_true_full, y_pred_moments_full)
 
 print("\n[ CNN ] Max-Threshold Classifier – FULL (train+test+anomalous)")
-print("Confusion Matrix (rows=true known?, cols=pred known?):\n", cm_max_f)
-print(f"Accuracy={acc_max_f:.4f}, Precision={prec_max_f:.4f}, Recall={rec_max_f:.4f}, F1={f1_max_f:.4f}")
+print("Confusion Matrix (rows=true [unknown, known], cols=pred [unknown, known]):\n", cm_max_f)
+print(f"TN={rates_max_f['TN']}, FP={rates_max_f['FP']}, FN={rates_max_f['FN']}, TP={rates_max_f['TP']}")
+print(
+    f"Accuracy={metrics_max_f['accuracy']:.4f}, "
+    f"Precision={metrics_max_f['precision']:.4f}, "
+    f"Sensitivity={metrics_max_f['sensitivity']:.4f}, "
+    f"Specificity={metrics_max_f['specificity']:.4f}, "
+    f"F1={metrics_max_f['f1']:.4f}"
+)
 
 print("\n[ CNN ] Skew/Kurtosis Classifier – FULL (train+test+anomalous)")
-print("Confusion Matrix (rows=true known?, cols=pred known?):\n", cm_mom_f)
-print(f"Accuracy={acc_mom_f:.4f}, Precision={prec_mom_f:.4f}, Recall={rec_mom_f:.4f}, F1={f1_mom_f:.4f}")
+print("Confusion Matrix (rows=true [unknown, known], cols=pred [unknown, known]):\n", cm_mom_f)
+print(f"TN={rates_mom_f['TN']}, FP={rates_mom_f['FP']}, FN={rates_mom_f['FN']}, TP={rates_mom_f['TP']}")
+print(
+    f"Accuracy={metrics_mom_f['accuracy']:.4f}, "
+    f"Precision={metrics_mom_f['precision']:.4f}, "
+    f"Sensitivity={metrics_mom_f['sensitivity']:.4f}, "
+    f"Specificity={metrics_mom_f['specificity']:.4f}, "
+    f"F1={metrics_mom_f['f1']:.4f}"
+)

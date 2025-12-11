@@ -241,17 +241,73 @@ def classify_moments(yhat, lambda_S, lambda_K):
     return np.where((ske < lambda_S) & (kur < lambda_K), -1, 0)
 
 def report_unknown(y_true, y_pred):
-    # y_true: 0 for known, -1 for unknown
-    # convert to boolean: True = known
+    """
+    Paper-style evaluation for unknown SIP dialog detection (Section IV-D, Pereira et al. 2021).
+
+    y_true : array of integers
+             0 = known dialog
+            -1 = unknown dialog
+
+    y_pred : array of integers
+             0 = predicted known
+            -1 = predicted unknown
+
+    Returns:
+        cm      : 2x2 confusion matrix
+        rates   : dict with raw TN, FP, FN, TP and normalized tn, fp, fn, tp
+        metrics : dict with specificity, sensitivity, precision, accuracy, f1
+    """
+
+    # Convert to booleans:
+    # True  = known dialog
+    # False = unknown dialog
     y_true_known = (y_true == 0)
     y_pred_known = (y_pred == 0)
 
+    # scikit-learn confusion matrix with labels [False, True] = [unknown, known]
     cm = confusion_matrix(y_true_known, y_pred_known)
-    acc = accuracy_score(y_true_known,    y_pred_known)
-    prec = precision_score(y_true_known,  y_pred_known)
-    rec  = recall_score(y_true_known,     y_pred_known)
-    f1   = f1_score(y_true_known,         y_pred_known)
-    return cm, acc, prec, rec, f1
+
+    # Extract counts following paper meaning
+    TN = cm[0, 0]   # true unknown → predicted unknown
+    FP = cm[0, 1]   # true unknown → predicted known
+    FN = cm[1, 0]   # true known   → predicted unknown
+    TP = cm[1, 1]   # true known   → predicted known
+
+    # Totals per class (required for normalized tn,tp,fp,fn in paper)
+    total_unknown = TN + FP
+    total_known   = TP + FN
+    total_all     = TN + FP + FN + TP
+
+    # Normalized rates
+    tn_rate = TN / total_unknown if total_unknown > 0 else 0.0
+    fp_rate = FP / total_unknown if total_unknown > 0 else 0.0
+    tp_rate = TP / total_known   if total_known   > 0 else 0.0
+    fn_rate = FN / total_known   if total_known   > 0 else 0.0
+
+    # Metrics
+    specificity = tn_rate                  # Correct detection of unknown dialogs
+    sensitivity = tp_rate                  # Correct detection of known dialogs
+    precision   = TP / (TP + FP) if (TP + FP) > 0 else 0.0
+    accuracy    = (TP + TN) / total_all if total_all > 0 else 0.0
+    f1 = (2 * precision * sensitivity / (precision + sensitivity)
+          if (precision + sensitivity) > 0 else 0.0)
+
+    # Pack results
+    rates = dict(
+        TN=TN, FP=FP, FN=FN, TP=TP,   # raw counts
+        tn=tn_rate, fp=fp_rate, fn=fn_rate, tp=tp_rate  # normalized
+    )
+
+    metrics = dict(
+        specificity=specificity,
+        sensitivity=sensitivity,
+        precision=precision,
+        accuracy=accuracy,
+        f1=f1,
+    )
+
+    return cm, rates, metrics
+
 
 # ---------------- Model 1 ----------------
 lambda_M1, lambda_S1, lambda_K1 = compute_thresholds(model1, X_train)
@@ -268,16 +324,30 @@ yhat_eval_1 = model1.predict(X_eval_1, batch_size=batch_size)
 y_pred_max_1     = classify_max_threshold(yhat_eval_1, lambda_M1)
 y_pred_moments_1 = classify_moments(yhat_eval_1, lambda_S1, lambda_K1)
 
-cm1_max, acc1_max, prec1_max, rec1_max, f11_max = report_unknown(y_true_eval_1, y_pred_max_1)
-cm1_mom, acc1_mom, prec1_mom, rec1_mom, f11_mom = report_unknown(y_true_eval_1, y_pred_moments_1)
+cm1_max, rates1_max, metrics1_max = report_unknown(y_true_eval_1, y_pred_max_1)
+cm1_mom, rates1_mom, metrics1_mom = report_unknown(y_true_eval_1, y_pred_moments_1)
 
 print("\nIV.D – Model1 – Max-Threshold Classifier")
-print("Confusion Matrix (rows=true known?, cols=pred known?):\n", cm1_max)
-print(f"Accuracy={acc1_max:.4f}, Precision={prec1_max:.4f}, Recall={rec1_max:.4f}, F1={f11_max:.4f}")
+print("Confusion Matrix (rows=true [unknown, known], cols=pred [unknown, known]):\n", cm1_max)
+print(f"TN={rates1_max['TN']}, FP={rates1_max['FP']}, FN={rates1_max['FN']}, TP={rates1_max['TP']}")
+print(
+    f"Accuracy={metrics1_max['accuracy']:.4f}, "
+    f"Precision={metrics1_max['precision']:.4f}, "
+    f"Sensitivity={metrics1_max['sensitivity']:.4f}, "
+    f"Specificity={metrics1_max['specificity']:.4f}, "
+    f"F1={metrics1_max['f1']:.4f}"
+)
 
 print("\nIV.D – Model1 – Skew/Kurtosis Classifier")
-print("Confusion Matrix (rows=true known?, cols=pred known?):\n", cm1_mom)
-print(f"Accuracy={acc1_mom:.4f}, Precision={prec1_mom:.4f}, Recall={rec1_mom:.4f}, F1={f11_mom:.4f}")
+print("Confusion Matrix (rows=true [unknown, known], cols=pred [unknown, known]):\n", cm1_mom)
+print(f"TN={rates1_mom['TN']}, FP={rates1_mom['FP']}, FN={rates1_mom['FN']}, TP={rates1_mom['TP']}")
+print(
+    f"Accuracy={metrics1_mom['accuracy']:.4f}, "
+    f"Precision={metrics1_mom['precision']:.4f}, "
+    f"Sensitivity={metrics1_mom['sensitivity']:.4f}, "
+    f"Specificity={metrics1_mom['specificity']:.4f}, "
+    f"F1={metrics1_mom['f1']:.4f}"
+)
 
 # -------------------------------------------------------------------
 # 10. Extended Unknown SIP Dialog Detection (IV.D "full test")
@@ -291,7 +361,6 @@ print("="*70)
 # ---------------- Model 1 – Extended test ----------------
 # Thresholds are still computed ONLY on benign train set (X_train),
 # as in the original IV.D.
-# We already computed lambda_M1, lambda_S1, lambda_K1 earlier.
 
 # Build full evaluation set: all benign (train + test) + all anomalous
 X_eval_full_1 = np.vstack([X_train, X_test, X_anomalous])
@@ -305,13 +374,27 @@ yhat_eval_full_1 = model1.predict(X_eval_full_1, batch_size=batch_size)
 y_pred_max_full_1     = classify_max_threshold(yhat_eval_full_1, lambda_M1)
 y_pred_moments_full_1 = classify_moments(yhat_eval_full_1, lambda_S1, lambda_K1)
 
-cm1_max_f, acc1_max_f, prec1_max_f, rec1_max_f, f11_max_f = report_unknown(y_true_eval_full_1, y_pred_max_full_1)
-cm1_mom_f, acc1_mom_f, prec1_mom_f, rec1_mom_f, f11_mom_f = report_unknown(y_true_eval_full_1, y_pred_moments_full_1)
+cm1_max_f, rates1_max_f, metrics1_max_f = report_unknown(y_true_eval_full_1, y_pred_max_full_1)
+cm1_mom_f, rates1_mom_f, metrics1_mom_f = report_unknown(y_true_eval_full_1, y_pred_moments_full_1)
 
 print("\n[Model 1] Max-Threshold Classifier – FULL (train+test+anomalous)")
-print("Confusion Matrix (rows=true known?, cols=pred known?):\n", cm1_max_f)
-print(f"Accuracy={acc1_max_f:.4f}, Precision={prec1_max_f:.4f}, Recall={rec1_max_f:.4f}, F1={f11_max_f:.4f}")
+print("Confusion Matrix (rows=true [unknown, known], cols=pred [unknown, known]):\n", cm1_max_f)
+print(f"TN={rates1_max_f['TN']}, FP={rates1_max_f['FP']}, FN={rates1_max_f['FN']}, TP={rates1_max_f['TP']}")
+print(
+    f"Accuracy={metrics1_max_f['accuracy']:.4f}, "
+    f"Precision={metrics1_max_f['precision']:.4f}, "
+    f"Sensitivity={metrics1_max_f['sensitivity']:.4f}, "
+    f"Specificity={metrics1_max_f['specificity']:.4f}, "
+    f"F1={metrics1_max_f['f1']:.4f}"
+)
 
 print("\n[Model 1] Skew/Kurtosis Classifier – FULL (train+test+anomalous)")
-print("Confusion Matrix (rows=true known?, cols=pred known?):\n", cm1_mom_f)
-print(f"Accuracy={acc1_mom_f:.4f}, Precision={prec1_mom_f:.4f}, Recall={rec1_mom_f:.4f}, F1={f11_mom_f:.4f}")
+print("Confusion Matrix (rows=true [unknown, known], cols=pred [unknown, known]):\n", cm1_mom_f)
+print(f"TN={rates1_mom_f['TN']}, FP={rates1_mom_f['FP']}, FN={rates1_mom_f['FN']}, TP={rates1_mom_f['TP']}")
+print(
+    f"Accuracy={metrics1_mom_f['accuracy']:.4f}, "
+    f"Precision={metrics1_mom_f['precision']:.4f}, "
+    f"Sensitivity={metrics1_mom_f['sensitivity']:.4f}, "
+    f"Specificity={metrics1_mom_f['specificity']:.4f}, "
+    f"F1={metrics1_mom_f['f1']:.4f}"
+)

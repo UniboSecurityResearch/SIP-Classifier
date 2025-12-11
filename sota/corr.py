@@ -190,7 +190,7 @@ def classify_dialog_corr(seq_ints, Du_N_pad_train, LS, Gamma):
 # ===========================================
 
 def detection_pd_normals(Du_list, Du_N_pad_train, LS, Gamma):
-    y_true = np.zeros(len(Du_list), dtype=int)
+    y_true = np.zeros(len(Du_list), dtype=int)   # all should be class 0 (normal)
     y_pred = np.zeros(len(Du_list), dtype=int)
     for i, seq in enumerate(Du_list):
         y_pred[i] = classify_dialog_corr(seq, Du_N_pad_train, LS, Gamma)
@@ -204,9 +204,77 @@ pd_test,  cm_test  = detection_pd_normals(Du_N_test,  Du_N_train_pad, LS, Gamma)
 
 print("\n=== IV.B-like – Detection on benign (normal) dialogs ===")
 print(f"PD_train (normals) = {pd_train:.4f}")
-print("Confusion matrix TRAIN (rows=true, cols=pred):\n", cm_train)
+print("Confusion matrix TRAIN (rows=true [0=normal,1=abnormal], cols=pred):\n", cm_train)
 print(f"PD_test  (normals) = {pd_test:.4f}")
-print("Confusion matrix TEST (rows=true, cols=pred):\n", cm_test)
+print("Confusion matrix TEST (rows=true [0=normal,1=abnormal], cols=pred):\n", cm_test)
+
+
+# ===========================================
+# Helper: paper-style unknown detection metrics
+# ===========================================
+
+def report_unknown(y_true, y_pred):
+    """
+    Paper-style evaluation for unknown SIP dialog detection.
+
+    Here:
+        y_true: 0 = known/normal, 1 = unknown/anomalous
+        y_pred: 0 = predicted known, 1 = predicted unknown
+
+    We convert to boolean with:
+        True  = known
+        False = unknown
+    to be consistent with the other scripts.
+
+    Returns:
+        cm      : 2x2 confusion matrix
+        rates   : dict with raw TN, FP, FN, TP and normalized tn, fp, fn, tp
+        metrics : dict with specificity, sensitivity, precision, accuracy, f1
+    """
+    # True = known, False = unknown
+    y_true_known = (y_true == 0)
+    y_pred_known = (y_pred == 0)
+
+    cm = confusion_matrix(y_true_known, y_pred_known)
+
+    # cm rows: [true unknown, true known], cols: [pred unknown, pred known]
+    TN = cm[0, 0]   # true unknown  → predicted unknown
+    FP = cm[0, 1]   # true unknown  → predicted known
+    FN = cm[1, 0]   # true known    → predicted unknown
+    TP = cm[1, 1]   # true known    → predicted known
+
+    total_unknown = TN + FP
+    total_known   = TP + FN
+    total_all     = TN + FP + FN + TP
+
+    # Normalized rates (same style as other scripts)
+    tn_rate = TN / total_unknown if total_unknown > 0 else 0.0
+    fp_rate = FP / total_unknown if total_unknown > 0 else 0.0
+    tp_rate = TP / total_known   if total_known   > 0 else 0.0
+    fn_rate = FN / total_known   if total_known   > 0 else 0.0
+
+    # Metrics
+    specificity = tn_rate                  # correct detection of unknown dialogs
+    sensitivity = tp_rate                  # correct detection of known dialogs
+    precision   = TP / (TP + FP) if (TP + FP) > 0 else 0.0
+    accuracy    = (TP + TN) / total_all if total_all > 0 else 0.0
+    f1 = (2 * precision * sensitivity / (precision + sensitivity)
+          if (precision + sensitivity) > 0 else 0.0)
+
+    rates = dict(
+        TN=TN, FP=FP, FN=FN, TP=TP,
+        tn=tn_rate, fp=fp_rate, fn=fn_rate, tp=tp_rate
+    )
+
+    metrics = dict(
+        specificity=specificity,
+        sensitivity=sensitivity,
+        precision=precision,
+        accuracy=accuracy,
+        f1=f1,
+    )
+
+    return cm, rates, metrics
 
 
 # ===========================================
@@ -214,16 +282,19 @@ print("Confusion matrix TEST (rows=true, cols=pred):\n", cm_test)
 #     Eval set = Du_N_test (known) + Du_A (unknown)
 # ===========================================
 
-def evaluate_unknown_detection(Du_known, Du_unknown, Du_N_pad_train, LS, Gamma, label):
+def evaluate_unknown_detection(Du_known, Du_unknown, Du_N_pad_train, LS, Gamma):
     """
-    Du_known: list/array of normal dialogs (ground truth = 0)
-    Du_unknown: list/array of anomalous dialogs (ground truth = 1)
+    Du_known   : list/array of normal dialogs (ground truth = 0)
+    Du_unknown : list/array of anomalous dialogs (ground truth = 1)
+
+    Returns:
+        cm, rates, metrics as from report_unknown()
     """
     # Build evaluation set
     all_seqs = list(Du_known) + list(Du_unknown)
     y_true = np.concatenate([
-        np.zeros(len(Du_known), dtype=int),  # known
-        np.ones(len(Du_unknown), dtype=int)  # unknown
+        np.zeros(len(Du_known), dtype=int),  # known = 0
+        np.ones(len(Du_unknown), dtype=int)  # unknown = 1
     ])
 
     y_pred = []
@@ -232,22 +303,23 @@ def evaluate_unknown_detection(Du_known, Du_unknown, Du_N_pad_train, LS, Gamma, 
         y_pred.append(classify_dialog_corr(seq, Du_N_pad_train, LS, Gamma))
     y_pred = np.array(y_pred)
 
-    cm = confusion_matrix(y_true, y_pred)
-    acc = accuracy_score(y_true, y_pred)
-    # Consider "unknown" (1) as the positive class here
-    prec = precision_score(y_true, y_pred, pos_label=1, zero_division=0)
-    rec  = recall_score(y_true, y_pred,  pos_label=1, zero_division=0)
-    f1   = f1_score(y_true,  y_pred,     pos_label=1, zero_division=0)
-
-    print(f"\n=== IV.D – {label} Unknown Detection ===")
-    print("Confusion Matrix (rows=true [0=known,1=unknown], cols=pred):\n", cm)
-    print(f"Accuracy={acc:.4f}, Precision(unknown)={prec:.4f}, Recall(unknown)={rec:.4f}, F1(unknown)={f1:.4f}")
-
-    return cm, acc, prec, rec, f1
+    cm, rates, metrics = report_unknown(y_true, y_pred)
+    return cm, rates, metrics
 
 # Clean: only test normals + all anomalous
-cm_clean, acc_clean, prec_clean, rec_clean, f1_clean = evaluate_unknown_detection(
-    Du_N_test, Du_A, Du_N_train_pad, LS, Gamma, label="CLEAN (test normals + anomalous)"
+cm_clean, rates_clean, metrics_clean = evaluate_unknown_detection(
+    Du_N_test, Du_A, Du_N_train_pad, LS, Gamma
+)
+
+print("\n=== IV.D – CLEAN (test normals + anomalous) Unknown Detection ===")
+print("Confusion Matrix (rows=true [unknown, known], cols=pred [unknown, known]):\n", cm_clean)
+print(f"TN={rates_clean['TN']}, FP={rates_clean['FP']}, FN={rates_clean['FN']}, TP={rates_clean['TP']}")
+print(
+    f"Accuracy={metrics_clean['accuracy']:.4f}, "
+    f"Precision(known)={metrics_clean['precision']:.4f}, "
+    f"Sensitivity(known)={metrics_clean['sensitivity']:.4f}, "
+    f"Specificity(unknown)={metrics_clean['specificity']:.4f}, "
+    f"F1(known)={metrics_clean['f1']:.4f}"
 )
 
 
@@ -258,6 +330,17 @@ cm_clean, acc_clean, prec_clean, rec_clean, f1_clean = evaluate_unknown_detectio
 
 Du_N_all = np.concatenate([Du_N_train, Du_N_test])
 
-cm_full, acc_full, prec_full, rec_full, f1_full = evaluate_unknown_detection(
-    Du_N_all, Du_A, Du_N_train_pad, LS, Gamma, label="FULL (train+test normals + anomalous)"
+cm_full, rates_full, metrics_full = evaluate_unknown_detection(
+    Du_N_all, Du_A, Du_N_train_pad, LS, Gamma
+)
+
+print("\n=== IV.D – FULL (train+test normals + anomalous) Unknown Detection ===")
+print("Confusion Matrix (rows=true [unknown, known], cols=pred [unknown, known]):\n", cm_full)
+print(f"TN={rates_full['TN']}, FP={rates_full['FP']}, FN={rates_full['FN']}, TP={rates_full['TP']}")
+print(
+    f"Accuracy={metrics_full['accuracy']:.4f}, "
+    f"Precision(known)={metrics_full['precision']:.4f}, "
+    f"Sensitivity(known)={metrics_full['sensitivity']:.4f}, "
+    f"Specificity(unknown)={metrics_full['specificity']:.4f}, "
+    f"F1(known)={metrics_full['f1']:.4f}"
 )

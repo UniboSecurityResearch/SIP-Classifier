@@ -11,59 +11,58 @@ Benign train shape: (2258, 250, 28) (2258, 2273)
 Benign test shape : (565, 250, 28) (565, 2273)
 Anomalous shape: (1305, 250, 28)
 Epoch 1/200
-29/29 - 21s - 709ms/step - accuracy: 0.0083 - loss: 7.7391 - val_accuracy: 0.0288 - val_loss: 7.7368
+29/29 - 22s - 753ms/step - accuracy: 0.0105 - loss: 7.7400 - val_accuracy: 0.0288 - val_loss: 7.7368
 Epoch 2/200
-29/29 - 0s - 11ms/step - accuracy: 0.0172 - loss: 7.6581 - val_accuracy: 0.0288 - val_loss: 8.1624
+29/29 - 0s - 15ms/step - accuracy: 0.0188 - loss: 7.6478 - val_accuracy: 0.0288 - val_loss: 8.1690
 Epoch 3/200
-29/29 - 0s - 11ms/step - accuracy: 0.0177 - loss: 7.4963 - val_accuracy: 0.0288 - val_loss: 7.9997
+29/29 - 0s - 15ms/step - accuracy: 0.0188 - loss: 7.4346 - val_accuracy: 0.0288 - val_loss: 8.0692
 Epoch 4/200
-29/29 - 0s - 14ms/step - accuracy: 0.0188 - loss: 7.3548 - val_accuracy: 0.0288 - val_loss: 8.1570
+29/29 - 0s - 15ms/step - accuracy: 0.0194 - loss: 7.2632 - val_accuracy: 0.0288 - val_loss: 8.4469
 Epoch 5/200
-29/29 - 0s - 15ms/step - accuracy: 0.0177 - loss: 7.2516 - val_accuracy: 0.0288 - val_loss: 8.4083
+29/29 - 0s - 15ms/step - accuracy: 0.0205 - loss: 7.0736 - val_accuracy: 0.0288 - val_loss: 8.5393
 Epoch 6/200
-29/29 - 0s - 15ms/step - accuracy: 0.0210 - loss: 7.1161 - val_accuracy: 0.0288 - val_loss: 8.5869
+29/29 - 0s - 15ms/step - accuracy: 0.0282 - loss: 6.8705 - val_accuracy: 0.0531 - val_loss: 8.7619
 Epoch 7/200
-29/29 - 0s - 15ms/step - accuracy: 0.0227 - loss: 6.9173 - val_accuracy: 0.0398 - val_loss: 8.7891
+29/29 - 0s - 14ms/step - accuracy: 0.0360 - loss: 6.6050 - val_accuracy: 0.0553 - val_loss: 9.1937
 Epoch 8/200
-29/29 - 0s - 15ms/step - accuracy: 0.0293 - loss: 6.6657 - val_accuracy: 0.0398 - val_loss: 9.0575
+29/29 - 0s - 15ms/step - accuracy: 0.0432 - loss: 6.4127 - val_accuracy: 0.0619 - val_loss: 9.4013
 Epoch 9/200
-29/29 - 0s - 15ms/step - accuracy: 0.0377 - loss: 6.4780 - val_accuracy: 0.0597 - val_loss: 9.0358
+29/29 - 0s - 14ms/step - accuracy: 0.0432 - loss: 6.1061 - val_accuracy: 0.0664 - val_loss: 9.9394
 Epoch 10/200
-29/29 - 0s - 15ms/step - accuracy: 0.0449 - loss: 6.1845 - val_accuracy: 0.0619 - val_loss: 9.5213
+29/29 - 0s - 15ms/step - accuracy: 0.0609 - loss: 5.8122 - val_accuracy: 0.0686 - val_loss: 10.3544
 Epoch 11/200
-29/29 - 0s - 14ms/step - accuracy: 0.0487 - loss: 5.9641 - val_accuracy: 0.0465 - val_loss: 9.8623
-[1m 1/36[0m [37m━━━━━━━━━━━━━━━━━━━━[0m [1m30s[0m 858ms/step[1m14/36[0m [32m━━━━━━━[0m[37m━━━━━━━━━━━━━[0m [1m0s[0m 4ms/step   [1m27/36[0m [32m━━━━━━━━━━━━━━━[0m[37m━━━━━[0m [1m0s[0m 4ms/step[1m36/36[0m [32m━━━━━━━━━━━━━━━━━━━━[0m[37m[0m [1m0s[0m 49ms/step[1m36/36[0m [32m━━━━━━━━━━━━━━━━━━━━[0m[37m[0m [1m3s[0m 49ms/step
-[1m1/9[0m [32m━━[0m[37m━━━━━━━━━━━━━━━━━━[0m [1m0s[0m 55ms/step[1m9/9[0m [32m━━━━━━━━━━━━━━━━━━━━[0m[37m[0m [1m0s[0m 225ms/step[1m9/9[0m [32m━━━━━━━━━━━━━━━━━━━━[0m[37m[0m [1m2s[0m 225ms/step
+29/29 - 0s - 14ms/step - accuracy: 0.0714 - loss: 5.5749 - val_accuracy: 0.0730 - val_loss: 10.7474
 
 IV.B – CNN Detection PD_train=0.0208, PD_test=0.0301
-[1m 1/36[0m [37m━━━━━━━━━━━━━━━━━━━━[0m [1m1s[0m 54ms/step[1m15/36[0m [32m━━━━━━━━[0m[37m━━━━━━━━━━━━[0m [1m0s[0m 4ms/step [1m29/36[0m [32m━━━━━━━━━━━━━━━━[0m[37m━━━━[0m [1m0s[0m 4ms/step[1m36/36[0m [32m━━━━━━━━━━━━━━━━━━━━[0m[37m[0m [1m0s[0m 4ms/step
-[1m 1/30[0m [37m━━━━━━━━━━━━━━━━━━━━[0m [1m1s[0m 54ms/step[1m15/30[0m [32m━━━━━━━━━━[0m[37m━━━━━━━━━━[0m [1m0s[0m 4ms/step [1m29/30[0m [32m━━━━━━━━━━━━━━━━━━━[0m[37m━[0m [1m0s[0m 4ms/step[1m30/30[0m [32m━━━━━━━━━━━━━━━━━━━━[0m[37m[0m [1m0s[0m 49ms/step[1m30/30[0m [32m━━━━━━━━━━━━━━━━━━━━[0m[37m[0m [1m1s[0m 49ms/step
 
 IV.D – CNN – CLEAN Max-Threshold Classifier
-Confusion Matrix (rows=true known?, cols=pred known?):
- [[951 354]
- [317 248]]
-Accuracy=0.6412, Precision=0.4120, Recall=0.4389, F1=0.4250
+Confusion Matrix (rows=true [unknown, known], cols=pred [unknown, known]):
+ [[1199  106]
+ [ 342  223]]
+TN=1199, FP=106, FN=342, TP=223
+Accuracy=0.7604, Precision=0.6778, Sensitivity=0.3947, Specificity=0.9188, F1=0.4989
 
 IV.D – CNN – CLEAN Skew/Kurtosis Classifier
-Confusion Matrix (rows=true known?, cols=pred known?):
- [[  93 1212]
- [ 216  349]]
-Accuracy=0.2364, Precision=0.2236, Recall=0.6177, F1=0.3283
+Confusion Matrix (rows=true [unknown, known], cols=pred [unknown, known]):
+ [[841 464]
+ [266 299]]
+TN=841, FP=464, FN=266, TP=299
+Accuracy=0.6096, Precision=0.3919, Sensitivity=0.5292, Specificity=0.6444, F1=0.4503
 
 ======================================================================
 IV.D – CNN – Extended evaluation (benign TRAIN + TEST + anomalous)
 ======================================================================
-[1m 1/65[0m [37m━━━━━━━━━━━━━━━━━━━━[0m [1m3s[0m 53ms/step[1m13/65[0m [32m━━━━[0m[37m━━━━━━━━━━━━━━━━[0m [1m0s[0m 4ms/step [1m26/65[0m [32m━━━━━━━━[0m[37m━━━━━━━━━━━━[0m [1m0s[0m 4ms/step[1m40/65[0m [32m━━━━━━━━━━━━[0m[37m━━━━━━━━[0m [1m0s[0m 4ms/step[1m53/65[0m [32m━━━━━━━━━━━━━━━━[0m[37m━━━━[0m [1m0s[0m 4ms/step[1m65/65[0m [32m━━━━━━━━━━━━━━━━━━━━[0m[37m[0m [1m0s[0m 24ms/step[1m65/65[0m [32m━━━━━━━━━━━━━━━━━━━━[0m[37m[0m [1m2s[0m 24ms/step
 
 [ CNN ] Max-Threshold Classifier – FULL (train+test+anomalous)
-Confusion Matrix (rows=true known?, cols=pred known?):
- [[ 951  354]
- [1599 1224]]
-Accuracy=0.5269, Precision=0.7757, Recall=0.4336, F1=0.5562
+Confusion Matrix (rows=true [unknown, known], cols=pred [unknown, known]):
+ [[1199  106]
+ [1713 1110]]
+TN=1199, FP=106, FN=1713, TP=1110
+Accuracy=0.5594, Precision=0.9128, Sensitivity=0.3932, Specificity=0.9188, F1=0.5496
 
 [ CNN ] Skew/Kurtosis Classifier – FULL (train+test+anomalous)
-Confusion Matrix (rows=true known?, cols=pred known?):
- [[  93 1212]
- [1117 1706]]
-Accuracy=0.4358, Precision=0.5846, Recall=0.6043, F1=0.5943
+Confusion Matrix (rows=true [unknown, known], cols=pred [unknown, known]):
+ [[ 841  464]
+ [1337 1486]]
+TN=841, FP=464, FN=1337, TP=1486
+Accuracy=0.5637, Precision=0.7621, Sensitivity=0.5264, Specificity=0.6444, F1=0.6227

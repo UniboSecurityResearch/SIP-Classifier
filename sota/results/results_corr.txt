@@ -28,20 +28,22 @@ Gamma threshold = 6.747830753211454e+25
 
 === IV.B-like – Detection on benign (normal) dialogs ===
 PD_train (normals) = 1.0000
-Confusion matrix TRAIN (rows=true, cols=pred):
+Confusion matrix TRAIN (rows=true [0=normal,1=abnormal], cols=pred):
  [[2258]]
 PD_test  (normals) = 1.0000
-Confusion matrix TEST (rows=true, cols=pred):
+Confusion matrix TEST (rows=true [0=normal,1=abnormal], cols=pred):
  [[565]]
 
 === IV.D – CLEAN (test normals + anomalous) Unknown Detection ===
-Confusion Matrix (rows=true [0=known,1=unknown], cols=pred):
- [[ 565    0]
- [1305    0]]
-Accuracy=0.3021, Precision(unknown)=0.0000, Recall(unknown)=0.0000, F1(unknown)=0.0000
+Confusion Matrix (rows=true [unknown, known], cols=pred [unknown, known]):
+ [[   0 1305]
+ [   0  565]]
+TN=0, FP=1305, FN=0, TP=565
+Accuracy=0.3021, Precision(known)=0.3021, Sensitivity(known)=1.0000, Specificity(unknown)=0.0000, F1(known)=0.4641
 
 === IV.D – FULL (train+test normals + anomalous) Unknown Detection ===
-Confusion Matrix (rows=true [0=known,1=unknown], cols=pred):
- [[2823    0]
- [1305    0]]
-Accuracy=0.6839, Precision(unknown)=0.0000, Recall(unknown)=0.0000, F1(unknown)=0.0000
+Confusion Matrix (rows=true [unknown, known], cols=pred [unknown, known]):
+ [[   0 1305]
+ [   0 2823]]
+TN=0, FP=1305, FN=0, TP=2823
+Accuracy=0.6839, Precision(known)=0.6839, Sensitivity(known)=1.0000, Specificity(unknown)=0.0000, F1(known)=0.8123

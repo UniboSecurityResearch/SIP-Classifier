@@ -38,7 +38,7 @@ max_len_benign = 0
 
 for d in benign_dialogs:
     seq = []
-    # same trick as your code: split by ':' then take 3rd field (index 2) after splitting by ','
+    # split by ':' then take 3rd field (index 2) after splitting by ','
     for msg in str(d).split(':'):
         parts = msg.split(',')
         if len(parts) < 3:
@@ -90,14 +90,12 @@ for d in anomalous_dialogs:
         else:
             tok = tok.strip()
             seq.append(tok)
-    # WARNING: assume all m,c are in message2idx (same methods/codes)
-    # If not, you could map unknowns to <PAD>:
+    # map tokens not in vocab to <PAD>
     clean_seq = []
     for t in seq:
         if t in message2idx:
             clean_seq.append(t)
         else:
-            # fallback: map unknown tokens to <PAD>
             clean_seq.append('<PAD>')
     seqs_anomalous.append(clean_seq)
 
@@ -129,7 +127,6 @@ print("N  =", N)
 # -------------------------------------------------------------------
 # 5. Build LSTM model (Model 2)
 # -------------------------------------------------------------------
-
 def build_model_2():
     m = Sequential([
         LSTM(units, return_sequences=True, input_shape=(LN, LM)),
@@ -243,17 +240,67 @@ def classify_moments(yhat, lambda_S, lambda_K):
     return np.where((ske < lambda_S) & (kur < lambda_K), -1, 0)
 
 def report_unknown(y_true, y_pred):
-    # y_true: 0 for known, -1 for unknown
-    # convert to boolean: True = known
+    """
+    Paper-style evaluation for unknown SIP dialog detection (Section IV-D).
+
+    y_true : array of integers
+             0 = known dialog
+            -1 = unknown dialog
+
+    y_pred : array of integers
+             0 = predicted known
+            -1 = predicted unknown
+
+    Returns:
+        cm      : 2x2 confusion matrix
+        rates   : dict with raw TN, FP, FN, TP and normalized tn, fp, fn, tp
+        metrics : dict with specificity, sensitivity, precision, accuracy, f1
+    """
+    # True  = known dialog
+    # False = unknown dialog
     y_true_known = (y_true == 0)
     y_pred_known = (y_pred == 0)
 
     cm = confusion_matrix(y_true_known, y_pred_known)
-    acc = accuracy_score(y_true_known,    y_pred_known)
-    prec = precision_score(y_true_known,  y_pred_known)
-    rec  = recall_score(y_true_known,     y_pred_known)
-    f1   = f1_score(y_true_known,         y_pred_known)
-    return cm, acc, prec, rec, f1
+
+    # cm rows: [true unknown, true known], cols: [pred unknown, pred known]
+    TN = cm[0, 0]   # true unknown → predicted unknown
+    FP = cm[0, 1]   # true unknown → predicted known
+    FN = cm[1, 0]   # true known   → predicted unknown
+    TP = cm[1, 1]   # true known   → predicted known
+
+    total_unknown = TN + FP
+    total_known   = TP + FN
+    total_all     = TN + FP + FN + TP
+
+    # Normalized rates
+    tn_rate = TN / total_unknown if total_unknown > 0 else 0.0
+    fp_rate = FP / total_unknown if total_unknown > 0 else 0.0
+    tp_rate = TP / total_known   if total_known   > 0 else 0.0
+    fn_rate = FN / total_known   if total_known   > 0 else 0.0
+
+    # Metrics
+    specificity = tn_rate                  # correct detection of unknown dialogs
+    sensitivity = tp_rate                  # correct detection of known dialogs
+    precision   = TP / (TP + FP) if (TP + FP) > 0 else 0.0
+    accuracy    = (TP + TN) / total_all if total_all > 0 else 0.0
+    f1 = (2 * precision * sensitivity / (precision + sensitivity)
+          if (precision + sensitivity) > 0 else 0.0)
+
+    rates = dict(
+        TN=TN, FP=FP, FN=FN, TP=TP,
+        tn=tn_rate, fp=fp_rate, fn=fn_rate, tp=tp_rate
+    )
+
+    metrics = dict(
+        specificity=specificity,
+        sensitivity=sensitivity,
+        precision=precision,
+        accuracy=accuracy,
+        f1=f1,
+    )
+
+    return cm, rates, metrics
 
 # ---------------- Model 2 ----------------
 lambda_M2, lambda_S2, lambda_K2 = compute_thresholds(model2, X_train)
@@ -270,16 +317,30 @@ yhat_eval_2 = model2.predict(X_eval_2, batch_size=batch_size)
 y_pred_max_2     = classify_max_threshold(yhat_eval_2, lambda_M2)
 y_pred_moments_2 = classify_moments(yhat_eval_2, lambda_S2, lambda_K2)
 
-cm2_max, acc2_max, prec2_max, rec2_max, f12_max = report_unknown(y_true_eval_2, y_pred_max_2)
-cm2_mom, acc2_mom, prec2_mom, rec2_mom, f12_mom = report_unknown(y_true_eval_2, y_pred_moments_2)
+cm2_max, rates2_max, metrics2_max = report_unknown(y_true_eval_2, y_pred_max_2)
+cm2_mom, rates2_mom, metrics2_mom = report_unknown(y_true_eval_2, y_pred_moments_2)
 
 print("\nIV.D – Model2 – Max-Threshold Classifier")
-print("Confusion Matrix (rows=true known?, cols=pred known?):\n", cm2_max)
-print(f"Accuracy={acc2_max:.4f}, Precision={prec2_max:.4f}, Recall={rec2_max:.4f}, F1={f12_max:.4f}")
+print("Confusion Matrix (rows=true [unknown, known], cols=pred [unknown, known]):\n", cm2_max)
+print(f"TN={rates2_max['TN']}, FP={rates2_max['FP']}, FN={rates2_max['FN']}, TP={rates2_max['TP']}")
+print(
+    f"Accuracy={metrics2_max['accuracy']:.4f}, "
+    f"Precision={metrics2_max['precision']:.4f}, "
+    f"Sensitivity={metrics2_max['sensitivity']:.4f}, "
+    f"Specificity={metrics2_max['specificity']:.4f}, "
+    f"F1={metrics2_max['f1']:.4f}"
+)
 
 print("\nIV.D – Model2 – Skew/Kurtosis Classifier")
-print("Confusion Matrix (rows=true known?, cols=pred known?):\n", cm2_mom)
-print(f"Accuracy={acc2_mom:.4f}, Precision={prec2_mom:.4f}, Recall={rec2_mom:.4f}, F1={f12_mom:.4f}")
+print("Confusion Matrix (rows=true [unknown, known], cols=pred [unknown, known]):\n", cm2_mom)
+print(f"TN={rates2_mom['TN']}, FP={rates2_mom['FP']}, FN={rates2_mom['FN']}, TP={rates2_mom['TP']}")
+print(
+    f"Accuracy={metrics2_mom['accuracy']:.4f}, "
+    f"Precision={metrics2_mom['precision']:.4f}, "
+    f"Sensitivity={metrics2_mom['sensitivity']:.4f}, "
+    f"Specificity={metrics2_mom['specificity']:.4f}, "
+    f"F1={metrics2_mom['f1']:.4f}"
+)
 
 # -------------------------------------------------------------------
 # 10. Extended Unknown SIP Dialog Detection (IV.D "full test")
@@ -290,10 +351,7 @@ print("\n" + "="*70)
 print("IV.D – Extended evaluation including benign TRAIN + TEST + anomalous")
 print("="*70)
 
-# ---------------- Model 2 – Extended test ----------------
-# Thresholds for model 2: lambda_M2, lambda_S2, lambda_K2
-# were already computed on X_train earlier.
-
+# Build full evaluation set: all benign (train + test) + all anomalous
 X_eval_full_2 = np.vstack([X_train, X_test, X_anomalous])
 y_true_eval_full_2 = np.concatenate([
     np.zeros(len(X_train) + len(X_test), dtype=int),   # known
@@ -305,13 +363,27 @@ yhat_eval_full_2 = model2.predict(X_eval_full_2, batch_size=batch_size)
 y_pred_max_full_2     = classify_max_threshold(yhat_eval_full_2, lambda_M2)
 y_pred_moments_full_2 = classify_moments(yhat_eval_full_2, lambda_S2, lambda_K2)
 
-cm2_max_f, acc2_max_f, prec2_max_f, rec2_max_f, f12_max_f = report_unknown(y_true_eval_full_2, y_pred_max_full_2)
-cm2_mom_f, acc2_mom_f, prec2_mom_f, rec2_mom_f, f12_mom_f = report_unknown(y_true_eval_full_2, y_pred_moments_full_2)
+cm2_max_f, rates2_max_f, metrics2_max_f = report_unknown(y_true_eval_full_2, y_pred_max_full_2)
+cm2_mom_f, rates2_mom_f, metrics2_mom_f = report_unknown(y_true_eval_full_2, y_pred_moments_full_2)
 
 print("\n[Model 2] Max-Threshold Classifier – FULL (train+test+anomalous)")
-print("Confusion Matrix (rows=true known?, cols=pred known?):\n", cm2_max_f)
-print(f"Accuracy={acc2_max_f:.4f}, Precision={prec2_max_f:.4f}, Recall={rec2_max_f:.4f}, F1={f12_max_f:.4f}")
+print("Confusion Matrix (rows=true [unknown, known], cols=pred [unknown, known]):\n", cm2_max_f)
+print(f"TN={rates2_max_f['TN']}, FP={rates2_max_f['FP']}, FN={rates2_max_f['FN']}, TP={rates2_max_f['TP']}")
+print(
+    f"Accuracy={metrics2_max_f['accuracy']:.4f}, "
+    f"Precision={metrics2_max_f['precision']:.4f}, "
+    f"Sensitivity={metrics2_max_f['sensitivity']:.4f}, "
+    f"Specificity={metrics2_max_f['specificity']:.4f}, "
+    f"F1={metrics2_max_f['f1']:.4f}"
+)
 
 print("\n[Model 2] Skew/Kurtosis Classifier – FULL (train+test+anomalous)")
-print("Confusion Matrix (rows=true known?, cols=pred known?):\n", cm2_mom_f)
-print(f"Accuracy={acc2_mom_f:.4f}, Precision={prec2_mom_f:.4f}, Recall={rec2_mom_f:.4f}, F1={f12_mom_f:.4f}")
+print("Confusion Matrix (rows=true [unknown, known], cols=pred [unknown, known]):\n", cm2_mom_f)
+print(f"TN={rates2_mom_f['TN']}, FP={rates2_mom_f['FP']}, FN={rates2_mom_f['FN']}, TP={rates2_mom_f['TP']}")
+print(
+    f"Accuracy={metrics2_mom_f['accuracy']:.4f}, "
+    f"Precision={metrics2_mom_f['precision']:.4f}, "
+    f"Sensitivity={metrics2_mom_f['sensitivity']:.4f}, "
+    f"Specificity={metrics2_mom_f['specificity']:.4f}, "
+    f"F1={metrics2_mom_f['f1']:.4f}"
+)

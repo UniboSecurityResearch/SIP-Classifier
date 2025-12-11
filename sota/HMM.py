@@ -74,7 +74,6 @@ print("message2idx size:", len(message2idx))
 # -------------------------------------------------------------------
 dialogs_str_benign = [" ".join(s) for s in seqs_benign]
 
-# factorize just to see how many unique we have (1:1 with seqs_benign qui)
 labels_benign, uniques_benign = pd.factorize(dialogs_str_benign)
 N_benign = len(uniques_benign)
 
@@ -91,7 +90,7 @@ int_seqs_benign = []
 for s in seqs_benign:
     int_seqs_benign.append([token2idx[tok] for tok in s if tok in token2idx])
 
-# unique benign integer sequences (1:1 con uniques_benign)
+# unique benign integer sequences (1:1 with uniques_benign)
 unique_int_seqs_benign = []
 for dialog_str in uniques_benign:
     idx = dialogs_str_benign.index(dialog_str)
@@ -262,12 +261,79 @@ pd_test,  cm_test  = detection_pd_normals(test_seqs_benign,  Theta)
 
 print("\n=== Experiment 1 – IV.B-like Detection on benign ===")
 print(f"PD_train (benign) = {pd_train:.4f}")
-print("Confusion matrix TRAIN (rows=true, cols=pred):\n", cm_train)
+print("Confusion matrix TRAIN (rows=true [0=benign,1=anom], cols=pred):\n", cm_train)
 print(f"PD_test  (benign) = {pd_test:.4f}")
-print("Confusion matrix TEST  (rows=true, cols=pred):\n", cm_test)
+print("Confusion matrix TEST  (rows=true [0=benign,1=anom], cols=pred):\n", cm_test)
+
 
 # -------------------------------------------------------------------
-# 10. Helper for Unknown detection experiments (IV.D-style)
+# 10. Helper: paper-style unknown detection metrics
+# -------------------------------------------------------------------
+def report_unknown(y_true, y_pred):
+    """
+    Paper-style evaluation for unknown detection.
+
+    Here:
+        y_true: 0 = known/benign, 1 = unknown/anomalous
+        y_pred: 0 = predicted known, 1 = predicted unknown
+
+    Internally:
+        True  = known
+        False = unknown
+
+    Returns:
+        cm      : 2x2 confusion matrix
+        rates   : dict with raw TN, FP, FN, TP and normalized tn, fp, fn, tp
+        metrics : dict with specificity, sensitivity, precision, accuracy, f1
+    """
+    # True = known, False = unknown
+    y_true_known = (y_true == 0)
+    y_pred_known = (y_pred == 0)
+
+    cm = confusion_matrix(y_true_known, y_pred_known)
+
+    # cm rows: [true unknown, true known], cols: [pred unknown, pred known]
+    TN = cm[0, 0]   # true unknown  → predicted unknown
+    FP = cm[0, 1]   # true unknown  → predicted known
+    FN = cm[1, 0]   # true known    → predicted unknown
+    TP = cm[1, 1]   # true known    → predicted known
+
+    total_unknown = TN + FP
+    total_known   = TP + FN
+    total_all     = TN + FP + FN + TP
+
+    # Normalized rates
+    tn_rate = TN / total_unknown if total_unknown > 0 else 0.0
+    fp_rate = FP / total_unknown if total_unknown > 0 else 0.0
+    tp_rate = TP / total_known   if total_known   > 0 else 0.0
+    fn_rate = FN / total_known   if total_known   > 0 else 0.0
+
+    # Metrics (known as positive class)
+    specificity = tn_rate                  # correct detection of unknown dialogs
+    sensitivity = tp_rate                  # correct detection of known dialogs
+    precision   = TP / (TP + FP) if (TP + FP) > 0 else 0.0
+    accuracy    = (TP + TN) / total_all if total_all > 0 else 0.0
+    f1 = (2 * precision * sensitivity / (precision + sensitivity)
+          if (precision + sensitivity) > 0 else 0.0)
+
+    rates = dict(
+        TN=TN, FP=FP, FN=FN, TP=TP,
+        tn=tn_rate, fp=fp_rate, fn=fn_rate, tp=tp_rate
+    )
+
+    metrics = dict(
+        specificity=specificity,
+        sensitivity=sensitivity,
+        precision=precision,
+        accuracy=accuracy,
+        f1=f1,
+    )
+
+    return cm, rates, metrics
+
+
+# -------------------------------------------------------------------
+# 11. Helper for Unknown detection experiments (IV.D-style)
 # -------------------------------------------------------------------
 def evaluate_unknown_detection(benign_seqs, anomalous_seqs, Theta, label):
     """
@@ -285,28 +351,26 @@ def evaluate_unknown_detection(benign_seqs, anomalous_seqs, Theta, label):
         y_pred.append(classify_known_unknown(seq, Theta, n=n))
     y_pred = np.array(y_pred)
 
-    cm  = confusion_matrix(y_true, y_pred)
-    acc = accuracy_score(y_true, y_pred)
-    prec = precision_score(y_true, y_pred, pos_label=1, zero_division=0)
-    rec  = recall_score(y_true,  y_pred, pos_label=1, zero_division=0)
-    f1   = f1_score(y_true,     y_pred, pos_label=1, zero_division=0)
+    cm, rates, metrics = report_unknown(y_true, y_pred)
 
     print(f"\n=== Experiment 2/3 – {label} ===")
-    print("Confusion Matrix (rows=true [0=benign,1=anom], cols=pred):\n", cm)
+    print("Confusion Matrix (rows=true [unknown, known], cols=pred [unknown, known]):\n", cm)
+    print(f"TN={rates['TN']}, FP={rates['FP']}, FN={rates['FN']}, TP={rates['TP']}")
     print(
-        f"Accuracy={acc:.4f}, "
-        f"Precision(unknown)={prec:.4f}, "
-        f"Recall(unknown)={rec:.4f}, "
-        f"F1(unknown)={f1:.4f}"
+        f"Accuracy={metrics['accuracy']:.4f}, "
+        f"Precision(known)={metrics['precision']:.4f}, "
+        f"Sensitivity(known)={metrics['sensitivity']:.4f}, "
+        f"Specificity(unknown)={metrics['specificity']:.4f}, "
+        f"F1(known)={metrics['f1']:.4f}"
     )
 
-    return cm, acc, prec, rec, f1
+    return cm, rates, metrics
 
 # -------------------------------------------------------------------
-# 11. Experiment 2 – IV.D CLEAN
+# 12. Experiment 2 – IV.D CLEAN
 #     Eval set = test benign + ALL anomalous
 # -------------------------------------------------------------------
-cm_clean, acc_clean, prec_clean, rec_clean, f1_clean = evaluate_unknown_detection(
+cm_clean, rates_clean, metrics_clean = evaluate_unknown_detection(
     test_seqs_benign,
     unique_int_seqs_anom,
     Theta,
@@ -314,12 +378,12 @@ cm_clean, acc_clean, prec_clean, rec_clean, f1_clean = evaluate_unknown_detectio
 )
 
 # -------------------------------------------------------------------
-# 12. Experiment 3 – IV.D FULL
+# 13. Experiment 3 – IV.D FULL
 #     Eval set = train benign + test benign + ALL anomalous
 # -------------------------------------------------------------------
 benign_all = np.concatenate([train_seqs_benign, test_seqs_benign])
 
-cm_full, acc_full, prec_full, rec_full, f1_full = evaluate_unknown_detection(
+cm_full, rates_full, metrics_full = evaluate_unknown_detection(
     benign_all,
     unique_int_seqs_anom,
     Theta,

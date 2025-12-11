@@ -21,22 +21,24 @@ Min/Max best train log-likelihood: -1948.3112762818307 -188.0541600092998
 
 === Experiment 1 – IV.B-like Detection on benign ===
 PD_train (benign) = 0.5622
-Confusion matrix TRAIN (rows=true, cols=pred):
+Confusion matrix TRAIN (rows=true [0=benign,1=anom], cols=pred):
  [[1022  796]
  [   0    0]]
 PD_test  (benign) = 0.5363
-Confusion matrix TEST  (rows=true, cols=pred):
+Confusion matrix TEST  (rows=true [0=benign,1=anom], cols=pred):
  [[244 211]
  [  0   0]]
 
 === Experiment 2/3 – IV.D CLEAN – test benign + anomalous ===
-Confusion Matrix (rows=true [0=benign,1=anom], cols=pred):
- [[244 211]
- [780 123]]
-Accuracy=0.2703, Precision(unknown)=0.3683, Recall(unknown)=0.1362, F1(unknown)=0.1989
+Confusion Matrix (rows=true [unknown, known], cols=pred [unknown, known]):
+ [[123 780]
+ [211 244]]
+TN=123, FP=780, FN=211, TP=244
+Accuracy=0.2703, Precision(known)=0.2383, Sensitivity(known)=0.5363, Specificity(unknown)=0.1362, F1(known)=0.3300
 
 === Experiment 2/3 – IV.D FULL – train+test benign + anomalous ===
-Confusion Matrix (rows=true [0=benign,1=anom], cols=pred):
- [[1266 1007]
- [ 780  123]]
-Accuracy=0.4373, Precision(unknown)=0.1088, Recall(unknown)=0.1362, F1(unknown)=0.1210
+Confusion Matrix (rows=true [unknown, known], cols=pred [unknown, known]):
+ [[ 123  780]
+ [1007 1266]]
+TN=123, FP=780, FN=1007, TP=1266
+Accuracy=0.4373, Precision(known)=0.6188, Sensitivity(known)=0.5570, Specificity(unknown)=0.1362, F1(known)=0.5862
