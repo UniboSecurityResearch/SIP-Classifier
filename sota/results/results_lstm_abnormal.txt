@@ -1,0 +1,332 @@
+====================================================================================================
+LSTM PAPER-STYLE PIPELINE
+====================================================================================================
+TensorFlow version: 2.17.0
+Seed: 42
+GPU: allowed
+
+This script reproduces the 4 LSTM architectures from the paper:
+- Model 1.0 = LSTM(N) -> Dense(N)
+- Model 1.1 = LSTM(N) -> Dropout(0.5) -> Dense(N)
+- Model 2.0 = LSTM(N, return_sequences=True) -> LSTM(N) -> Dense(N)
+- Model 2.1 = LSTM(N, return_sequences=True) -> LSTM(N) -> Dropout(0.5) -> Dense(N)
+
+Unknown / anomalous dialog detection uses ONLY the paper LSTM detector:
+- skewness / kurtosis threshold-based classifier
+====================================================================================================
+
+RAW DATA
+Train shape: (7369, 2)
+Test shape : (1000, 2)
+Test label distribution:
+label
+0    700
+1    300
+Name: count, dtype: int64
+
+AFTER PARSING / FILTERING
+Valid training dialogs: 7369
+Valid test dialogs    : 1000
+Valid benign test dialogs    : 700
+Valid anomalous test dialogs : 300
+
+BENIGN TRAIN / VALIDATION SPLIT
+Train benign dialogs: 5895
+Val benign dialogs  : 1474
+
+VOCABULARY
+Vocabulary size (LM): 29
+Max training sequence length (LN): 247
+Known benign classes in train (N): 1504
+IMPORTANT:
+- In the paper, the LSTM layer uses N units, where N is the number of known benign classes.
+- Therefore these models are different from your previous 256-unit LSTMs.
+
+ENCODED DATA SHAPES
+X_train    : (5895, 247, 29)
+X_val_known: (1192, 247, 29)
+X_test     : (1000, 247, 29)
+
+====================================================================================================
+MODEL 1.0
+====================================================================================================
+
+TRAINING PHASE
+- Training uses only benign dialogs from train.csv
+- One softmax class per unique benign training dialog
+- LSTM units = N = 1504
+- Batch size = 933 (paper setting)
+- Max epochs = 500 (paper setting)
+- Anomaly detector = skewness/kurtosis threshold-based classifier
+- Validation uses benign validation dialogs whose class is known from training
+Epoch 1/500
+7/7 - 6s - 877ms/step - accuracy: 0.2132 - loss: 6.3882 - val_accuracy: 0.3557 - val_loss: 4.1989
+Epoch 2/500
+7/7 - 2s - 302ms/step - accuracy: 0.2921 - loss: 4.9770 - val_accuracy: 0.3557 - val_loss: 4.1655
+Epoch 3/500
+7/7 - 2s - 301ms/step - accuracy: 0.2921 - loss: 4.9579 - val_accuracy: 0.3557 - val_loss: 4.1660
+Epoch 4/500
+7/7 - 2s - 306ms/step - accuracy: 0.2921 - loss: 4.9489 - val_accuracy: 0.3557 - val_loss: 4.1511
+Epoch 5/500
+7/7 - 2s - 301ms/step - accuracy: 0.2921 - loss: 4.9454 - val_accuracy: 0.3557 - val_loss: 4.1310
+Epoch 6/500
+7/7 - 2s - 293ms/step - accuracy: 0.2921 - loss: 4.9383 - val_accuracy: 0.3557 - val_loss: 4.1418
+Epoch 7/500
+7/7 - 2s - 310ms/step - accuracy: 0.2921 - loss: 4.9348 - val_accuracy: 0.3557 - val_loss: 4.1368
+Epoch 8/500
+7/7 - 2s - 292ms/step - accuracy: 0.2921 - loss: 4.9322 - val_accuracy: 0.3557 - val_loss: 4.1347
+Epoch 9/500
+7/7 - 2s - 312ms/step - accuracy: 0.2921 - loss: 4.9320 - val_accuracy: 0.3557 - val_loss: 4.1370
+Epoch 10/500
+7/7 - 2s - 305ms/step - accuracy: 0.2921 - loss: 4.9321 - val_accuracy: 0.3557 - val_loss: 4.1367
+Epoch 11/500
+7/7 - 2s - 312ms/step - accuracy: 0.2921 - loss: 4.9325 - val_accuracy: 0.3557 - val_loss: 4.1362
+Epoch 12/500
+7/7 - 2s - 317ms/step - accuracy: 0.2921 - loss: 4.9327 - val_accuracy: 0.3557 - val_loss: 4.1364
+Epoch 13/500
+7/7 - 2s - 311ms/step - accuracy: 0.2921 - loss: 4.9328 - val_accuracy: 0.3557 - val_loss: 4.1368
+Epoch 14/500
+7/7 - 2s - 315ms/step - accuracy: 0.2921 - loss: 4.9328 - val_accuracy: 0.3557 - val_loss: 4.1364
+Epoch 15/500
+7/7 - 2s - 309ms/step - accuracy: 0.2921 - loss: 4.9327 - val_accuracy: 0.3557 - val_loss: 4.1364
+
+KNOWN-BENIGN CLASSIFICATION (diagnostic only)
+[MODEL 1.0] Train known-benign accuracy: 0.2921
+[MODEL 1.0] Val known-benign accuracy: 0.3557
+
+PAPER ANOMALY DETECTOR THRESHOLDS
+[MODEL 1.0] lambda_S = 36.132614
+[MODEL 1.0] lambda_K = 1362.990035
+
+BINARY ANOMALY DETECTION ON TEST.CSV
+- 0 = benign
+- 1 = anomalous
+- Rule: anomalous if skew < lambda_S AND kurtosis < lambda_K
+
+CONFUSION MATRIX [rows=true 0/1, cols=pred 0/1]
+[[700   0]
+ [299   1]]
+
+METRICS
+TN: 700
+FP: 0
+FN: 299
+TP: 1
+specificity: 1.0
+sensitivity: 0.0033333333333333335
+precision: 1.0
+recall: 0.0033333333333333335
+accuracy: 0.701
+f1: 0.006644518272425249
+
+====================================================================================================
+MODEL 1.1
+====================================================================================================
+
+TRAINING PHASE
+- Training uses only benign dialogs from train.csv
+- One softmax class per unique benign training dialog
+- LSTM units = N = 1504
+- Batch size = 933 (paper setting)
+- Max epochs = 500 (paper setting)
+- Anomaly detector = skewness/kurtosis threshold-based classifier
+- Validation uses benign validation dialogs whose class is known from training
+Epoch 1/500
+7/7 - 4s - 585ms/step - accuracy: 0.2280 - loss: 6.3778 - val_accuracy: 0.3557 - val_loss: 4.1690
+Epoch 2/500
+7/7 - 2s - 294ms/step - accuracy: 0.2921 - loss: 5.0127 - val_accuracy: 0.3557 - val_loss: 4.1385
+Epoch 3/500
+7/7 - 2s - 302ms/step - accuracy: 0.2921 - loss: 4.9748 - val_accuracy: 0.3557 - val_loss: 4.1439
+Epoch 4/500
+7/7 - 2s - 291ms/step - accuracy: 0.2921 - loss: 4.9588 - val_accuracy: 0.3557 - val_loss: 4.1421
+Epoch 5/500
+7/7 - 2s - 303ms/step - accuracy: 0.2921 - loss: 4.9588 - val_accuracy: 0.3557 - val_loss: 4.1290
+Epoch 6/500
+7/7 - 2s - 293ms/step - accuracy: 0.2921 - loss: 4.9574 - val_accuracy: 0.3557 - val_loss: 4.1345
+Epoch 7/500
+7/7 - 2s - 291ms/step - accuracy: 0.2921 - loss: 4.9504 - val_accuracy: 0.3557 - val_loss: 4.1425
+Epoch 8/500
+7/7 - 2s - 303ms/step - accuracy: 0.2921 - loss: 4.9566 - val_accuracy: 0.3557 - val_loss: 4.1360
+Epoch 9/500
+7/7 - 2s - 297ms/step - accuracy: 0.2921 - loss: 4.9592 - val_accuracy: 0.3557 - val_loss: 4.1379
+Epoch 10/500
+7/7 - 2s - 301ms/step - accuracy: 0.2921 - loss: 4.9496 - val_accuracy: 0.3557 - val_loss: 4.1350
+Epoch 11/500
+7/7 - 2s - 302ms/step - accuracy: 0.2921 - loss: 4.9505 - val_accuracy: 0.3557 - val_loss: 4.1358
+Epoch 12/500
+7/7 - 2s - 306ms/step - accuracy: 0.2921 - loss: 4.9492 - val_accuracy: 0.3557 - val_loss: 4.1348
+Epoch 13/500
+7/7 - 2s - 299ms/step - accuracy: 0.2921 - loss: 4.9551 - val_accuracy: 0.3557 - val_loss: 4.1359
+Epoch 14/500
+7/7 - 2s - 304ms/step - accuracy: 0.2921 - loss: 4.9481 - val_accuracy: 0.3557 - val_loss: 4.1374
+Epoch 15/500
+7/7 - 2s - 301ms/step - accuracy: 0.2921 - loss: 4.9501 - val_accuracy: 0.3557 - val_loss: 4.1360
+
+KNOWN-BENIGN CLASSIFICATION (diagnostic only)
+[MODEL 1.1] Train known-benign accuracy: 0.2921
+[MODEL 1.1] Val known-benign accuracy: 0.3557
+
+PAPER ANOMALY DETECTOR THRESHOLDS
+[MODEL 1.1] lambda_S = 35.501316
+[MODEL 1.1] lambda_K = 1327.124317
+
+BINARY ANOMALY DETECTION ON TEST.CSV
+- 0 = benign
+- 1 = anomalous
+- Rule: anomalous if skew < lambda_S AND kurtosis < lambda_K
+
+CONFUSION MATRIX [rows=true 0/1, cols=pred 0/1]
+[[488 212]
+ [269  31]]
+
+METRICS
+TN: 488
+FP: 212
+FN: 269
+TP: 31
+specificity: 0.6971428571428572
+sensitivity: 0.10333333333333333
+precision: 0.12757201646090535
+recall: 0.10333333333333333
+accuracy: 0.519
+f1: 0.1141804788213628
+
+====================================================================================================
+MODEL 2.0
+====================================================================================================
+
+TRAINING PHASE
+- Training uses only benign dialogs from train.csv
+- One softmax class per unique benign training dialog
+- LSTM units = N = 1504
+- Batch size = 933 (paper setting)
+- Max epochs = 500 (paper setting)
+- Anomaly detector = skewness/kurtosis threshold-based classifier
+- Validation uses benign validation dialogs whose class is known from training
+Epoch 1/500
+7/7 - 6s - 838ms/step - accuracy: 0.1625 - loss: 6.9938 - val_accuracy: 0.0713 - val_loss: 4.8729
+Epoch 2/500
+7/7 - 5s - 643ms/step - accuracy: 0.1600 - loss: 6.8021 - val_accuracy: 0.3557 - val_loss: 4.6931
+Epoch 3/500
+7/7 - 4s - 642ms/step - accuracy: 0.2921 - loss: 5.0710 - val_accuracy: 0.3557 - val_loss: 4.1352
+Epoch 4/500
+7/7 - 5s - 675ms/step - accuracy: 0.2921 - loss: 5.0387 - val_accuracy: 0.3557 - val_loss: 4.1150
+Epoch 5/500
+7/7 - 5s - 655ms/step - accuracy: 0.2921 - loss: 4.9994 - val_accuracy: 0.3557 - val_loss: 4.1740
+Epoch 6/500
+7/7 - 5s - 667ms/step - accuracy: 0.2921 - loss: 4.9774 - val_accuracy: 0.3557 - val_loss: 4.1679
+Epoch 7/500
+7/7 - 5s - 654ms/step - accuracy: 0.2921 - loss: 4.9544 - val_accuracy: 0.3557 - val_loss: 4.1385
+Epoch 8/500
+7/7 - 5s - 661ms/step - accuracy: 0.2921 - loss: 4.9432 - val_accuracy: 0.3557 - val_loss: 4.1304
+Epoch 9/500
+7/7 - 5s - 659ms/step - accuracy: 0.2921 - loss: 4.9387 - val_accuracy: 0.3557 - val_loss: 4.1321
+Epoch 10/500
+7/7 - 5s - 662ms/step - accuracy: 0.2921 - loss: 4.9444 - val_accuracy: 0.3557 - val_loss: 4.2043
+Epoch 11/500
+7/7 - 5s - 653ms/step - accuracy: 0.2921 - loss: 4.9502 - val_accuracy: 0.3557 - val_loss: 4.1489
+Epoch 12/500
+7/7 - 5s - 660ms/step - accuracy: 0.2921 - loss: 4.9416 - val_accuracy: 0.3557 - val_loss: 4.1270
+Epoch 13/500
+7/7 - 5s - 661ms/step - accuracy: 0.2921 - loss: 4.9430 - val_accuracy: 0.3557 - val_loss: 4.1367
+Epoch 14/500
+7/7 - 5s - 646ms/step - accuracy: 0.2921 - loss: 4.9436 - val_accuracy: 0.3557 - val_loss: 4.1348
+
+KNOWN-BENIGN CLASSIFICATION (diagnostic only)
+[MODEL 2.0] Train known-benign accuracy: 0.2921
+[MODEL 2.0] Val known-benign accuracy: 0.3557
+
+PAPER ANOMALY DETECTOR THRESHOLDS
+[MODEL 2.0] lambda_S = 36.216389
+[MODEL 2.0] lambda_K = 1368.863281
+
+BINARY ANOMALY DETECTION ON TEST.CSV
+- 0 = benign
+- 1 = anomalous
+- Rule: anomalous if skew < lambda_S AND kurtosis < lambda_K
+
+CONFUSION MATRIX [rows=true 0/1, cols=pred 0/1]
+[[321 379]
+ [178 122]]
+
+METRICS
+TN: 321
+FP: 379
+FN: 178
+TP: 122
+specificity: 0.4585714285714286
+sensitivity: 0.4066666666666667
+precision: 0.2435129740518962
+recall: 0.4066666666666667
+accuracy: 0.443
+f1: 0.3046192259675406
+
+====================================================================================================
+MODEL 2.1
+====================================================================================================
+
+TRAINING PHASE
+- Training uses only benign dialogs from train.csv
+- One softmax class per unique benign training dialog
+- LSTM units = N = 1504
+- Batch size = 933 (paper setting)
+- Max epochs = 500 (paper setting)
+- Anomaly detector = skewness/kurtosis threshold-based classifier
+- Validation uses benign validation dialogs whose class is known from training
+Epoch 1/500
+7/7 - 6s - 861ms/step - accuracy: 0.1627 - loss: 6.8280 - val_accuracy: 0.3557 - val_loss: 4.2927
+Epoch 2/500
+7/7 - 5s - 659ms/step - accuracy: 0.1925 - loss: 6.8948 - val_accuracy: 0.3557 - val_loss: 4.7619
+Epoch 3/500
+7/7 - 5s - 658ms/step - accuracy: 0.2904 - loss: 5.1962 - val_accuracy: 0.3557 - val_loss: 4.1182
+Epoch 4/500
+7/7 - 5s - 662ms/step - accuracy: 0.2828 - loss: 5.0982 - val_accuracy: 0.3557 - val_loss: 4.0872
+Epoch 5/500
+7/7 - 5s - 644ms/step - accuracy: 0.2921 - loss: 5.0599 - val_accuracy: 0.3557 - val_loss: 4.1253
+Epoch 6/500
+7/7 - 4s - 643ms/step - accuracy: 0.2921 - loss: 5.0406 - val_accuracy: 0.3557 - val_loss: 4.1409
+Epoch 7/500
+7/7 - 5s - 649ms/step - accuracy: 0.2921 - loss: 5.0249 - val_accuracy: 0.3557 - val_loss: 4.1315
+Epoch 8/500
+7/7 - 5s - 646ms/step - accuracy: 0.2923 - loss: 5.0189 - val_accuracy: 0.3557 - val_loss: 4.1348
+Epoch 9/500
+7/7 - 5s - 653ms/step - accuracy: 0.2921 - loss: 5.0076 - val_accuracy: 0.3557 - val_loss: 4.1319
+Epoch 10/500
+7/7 - 5s - 650ms/step - accuracy: 0.2919 - loss: 5.0153 - val_accuracy: 0.3557 - val_loss: 4.1320
+Epoch 11/500
+7/7 - 4s - 636ms/step - accuracy: 0.2918 - loss: 5.0160 - val_accuracy: 0.3557 - val_loss: 4.1304
+Epoch 12/500
+7/7 - 5s - 661ms/step - accuracy: 0.2921 - loss: 5.0005 - val_accuracy: 0.3557 - val_loss: 4.1290
+Epoch 13/500
+7/7 - 5s - 657ms/step - accuracy: 0.2921 - loss: 5.0099 - val_accuracy: 0.3557 - val_loss: 4.1315
+Epoch 14/500
+7/7 - 4s - 642ms/step - accuracy: 0.2921 - loss: 5.0080 - val_accuracy: 0.3557 - val_loss: 4.1294
+
+KNOWN-BENIGN CLASSIFICATION (diagnostic only)
+[MODEL 2.1] Train known-benign accuracy: 0.2921
+[MODEL 2.1] Val known-benign accuracy: 0.3557
+
+PAPER ANOMALY DETECTOR THRESHOLDS
+[MODEL 2.1] lambda_S = 35.731625
+[MODEL 2.1] lambda_K = 1343.076294
+
+BINARY ANOMALY DETECTION ON TEST.CSV
+- 0 = benign
+- 1 = anomalous
+- Rule: anomalous if skew < lambda_S AND kurtosis < lambda_K
+
+CONFUSION MATRIX [rows=true 0/1, cols=pred 0/1]
+[[700   0]
+ [300   0]]
+
+METRICS
+TN: 700
+FP: 0
+FN: 300
+TP: 0
+specificity: 1.0
+sensitivity: 0.0
+precision: 0.0
+recall: 0.0
+accuracy: 0.7
+f1: 0.0

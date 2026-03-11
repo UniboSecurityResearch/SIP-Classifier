@@ -1,0 +1,3 @@
+baseline,theta,TN,FP,FN,TP,specificity,sensitivity,precision,recall,accuracy,f1,mcc
+correlation_non_normalized,6.873690515476247e+16,700,0,300,0,1.0,0.0,0.0,0.0,0.7,0.0,0.0
+correlation_normalized,1.117151049424206e-05,700,0,268,32,1.0,0.10666666666666667,1.0,0.10666666666666667,0.732,0.1927710843373494,0.27773186030035396

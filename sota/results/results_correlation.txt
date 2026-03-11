@@ -1,0 +1,94 @@
+====================================================================================================
+CORRELATION-BASED SIP DIALOG CLASSIFIER IMPLEMENTATION
+====================================================================================================
+Implemented exactly as close as possible to the paper:
+- padded dialogs
+- zero-lag cross-correlation
+- vector r of correlations against the benign knowledge base D = DN
+- central moments of r
+- decision based on M4 (4th central moment)
+- threshold theta > max M4 computed on benign dialogs in D
+
+Two variants are computed:
+1) non-normalized cross-correlation
+2) normalized cross-correlation
+
+Binary interpretation on test.csv:
+0 = benign
+1 = anomalous
+====================================================================================================
+
+RAW DATA
+Train shape: (7369, 2)
+Test shape : (1000, 2)
+Test label distribution:
+label
+0    700
+1    300
+Name: count, dtype: int64
+
+AFTER PARSING / FILTERING
+Valid training dialogs: 7369
+Valid test dialogs    : 1000
+Valid benign test dialogs    : 700
+Valid anomalous test dialogs : 300
+
+KNOWLEDGE BASE
+Unique benign dialogs in D = DN: 1772
+Padded sequence length LS: 250
+
+====================================================================================================
+NON-NORMALIZED CLASSIFIER
+====================================================================================================
+theta_non_normalized = 6.873691e+16
+max benign-train M4  = 6.873691e+16
+Decision rule:
+- H0: M4 <= theta  -> benign
+- H1: M4 >  theta  -> anomalous
+
+Confusion matrix [rows=true 0/1, cols=pred 0/1]:
+[[700   0]
+ [300   0]]
+
+Metrics:
+TN: 700
+FP: 0
+FN: 300
+TP: 0
+specificity: 1.0
+sensitivity: 0.0
+precision: 0.0
+recall: 0.0
+accuracy: 0.7
+f1: 0.0
+mcc: 0.0
+
+====================================================================================================
+NORMALIZED CLASSIFIER
+====================================================================================================
+theta_normalized = 1.117151e-05
+max benign-train M4 = 1.117151e-05
+Decision rule:
+- H0: M4 <= theta  -> benign
+- H1: M4 >  theta  -> anomalous
+
+Confusion matrix [rows=true 0/1, cols=pred 0/1]:
+[[700   0]
+ [268  32]]
+
+Metrics:
+TN: 700
+FP: 0
+FN: 268
+TP: 32
+specificity: 1.0
+sensitivity: 0.10666666666666667
+precision: 1.0
+recall: 0.10666666666666667
+accuracy: 0.732
+f1: 0.1927710843373494
+mcc: 0.27773186030035396
+
+Saved:
+- correlation_predictions.csv
+- correlation_summary.csv
