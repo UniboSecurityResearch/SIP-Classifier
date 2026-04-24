@@ -1,0 +1,2 @@
+baseline,ngram_order,alpha_emission,self_transition,threshold_percentile,use_forward_score_for_rejection,TN,FP,FN,TP,specificity,sensitivity,precision,recall,accuracy,f1
+Full HMM baseline,3,0.5,0.995,1.0,1,680,20,213,87,0.9714285714285714,0.29,0.8130841121495327,0.29,0.767,0.4275184275184275

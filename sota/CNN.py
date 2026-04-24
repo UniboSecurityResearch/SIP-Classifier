@@ -2,7 +2,6 @@ import os
 
 # ============================================================
 # 0. REPRODUCIBILITY SETUP
-#    GPU is allowed. We do NOT force CPU-only.
 # ============================================================
 SEED = 42
 

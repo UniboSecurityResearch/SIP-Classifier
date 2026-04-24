@@ -1,0 +1,59 @@
+
+====================================================================================================
+LOADING DATA
+====================================================================================================
+Train shape: (7369, 2)
+Test shape : (1000, 2)
+Test label distribution:
+label
+0    700
+1    300
+Name: count, dtype: int64
+Valid train dialogs: 7369
+Valid test dialogs : 1000
+Valid benign test  : 700
+Valid anomalous    : 300
+Train benign split: 5895
+Val benign split  : 1474
+
+====================================================================================================
+HMM SETUP SUMMARY
+====================================================================================================
+Known benign states (unique dialogs) in training: 1504
+Main task:
+- Train only on benign dialogs
+- Evaluate binary anomaly detection on test.csv
+- 0 = benign, 1 = anomalous
+
+====================================================================================================
+BUILDING CLASS-CONDITIONAL OBSERVATION MODEL
+====================================================================================================
+Vocabulary size: 29
+N-gram order  : 3
+
+====================================================================================================
+FITTING BENIGN REJECTION THRESHOLDS
+====================================================================================================
+lambda_viterbi (p1.0 benign val): -1.431012
+lambda_forward (p1.0 benign val): -1.402080
+
+====================================================================================================
+HMM INFERENCE ON TEST SET
+====================================================================================================
+
+Full HMM baseline
+Confusion matrix [rows=true 0/1, cols=pred 0/1]:
+[[680  20]
+ [213  87]]
+{'TN': 680, 'FP': 20, 'FN': 213, 'TP': 87, 'specificity': 0.9714285714285714, 'sensitivity': 0.29, 'precision': 0.8130841121495327, 'recall': 0.29, 'accuracy': 0.767, 'f1': 0.4275184275184275}
+
+====================================================================================================
+FINAL SUMMARY
+====================================================================================================
+            baseline  ngram_order  alpha_emission  ...  recall  accuracy        f1
+0  Full HMM baseline            3             0.5  ...    0.29     0.767  0.427518
+
+[1 rows x 16 columns]
+
+Saved summary to baseline_results_hmm.csv
+Saved per-dialog predictions to hmm_predictions.csv
