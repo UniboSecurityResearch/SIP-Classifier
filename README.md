@@ -1,7 +1,7 @@
 # SIP-Classifier
 
 This repository contains the dataset and supporting scripts used in the paper
-"SIP-Classifier: Classifying SIP Signaling Sequences in IMS Using Transformers and Clustering".
+"SIP-Classifier: Unsupervised Classification of SIP-IMS Signaling with Transformer and Clustering".
 
 **Repository Structure**
 
