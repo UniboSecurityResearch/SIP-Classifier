@@ -1,0 +1,2 @@
+baseline,TN,FP,FN,TP,specificity,sensitivity,precision,recall,accuracy,f1
+Transformer encoder,161,539,20,280,0.23,0.9333333333333333,0.3418803418803419,0.9333333333333333,0.441,0.5004468275245755

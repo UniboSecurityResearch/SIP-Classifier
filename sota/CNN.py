@@ -475,10 +475,121 @@ def train_and_evaluate_cnn():
         "history": history.history,
         "lambda_max_per_class": lambda_max_per_class,
         "lambda_max_fallback": lambda_max_fallback,
-        "binary_metrics": metrics
+        "binary_metrics": metrics,
+        "y_pred_binary": y_pred_binary
     }
 
 # ============================================================
 # 12. RUN
 # ============================================================
 results = train_and_evaluate_cnn()
+
+# Save per-sample predictions for a posteriori model comparison (e.g. McNemar).
+# test_csv_row = original 0-based row number in test.csv (before empty-sequence
+# filtering): stable join key to align predictions across the baseline scripts
+test_csv_row = np.array([i for i, s in enumerate(test_sequences_all) if len(s) > 0], dtype=int)
+pred_df = pd.DataFrame({
+    "idx": np.arange(len(y_test_binary)),
+    "test_csv_row": test_csv_row,
+    "true_label": y_test_binary,
+    "pred_label": results["y_pred_binary"],
+    # original signalling description of each test dialog, verbatim from test.csv
+    "Replaced Signalling Description": [test_dialogs_raw[i] for i in test_csv_row],
+})
+pred_df.to_csv("cnn_predictions.csv", index=False)
+print("\nSaved per-dialog predictions to cnn_predictions.csv")
+
+# ============================================================
+# 13. STATISTICAL TESTS: BOOTSTRAP CI + McNEMAR'S TEST
+# ============================================================
+from scipy.stats import binomtest, chi2
+
+print("\n" + "=" * 100)
+print("STATISTICAL TESTS: BOOTSTRAP CI + McNEMAR'S TEST")
+print("=" * 100)
+
+N_BOOTSTRAP = 1000
+BOOTSTRAP_CI = 95.0
+
+def bootstrap_metric_cis(y_true, y_pred, n_boot=N_BOOTSTRAP, ci=BOOTSTRAP_CI, seed=SEED):
+    """
+    Nonparametric bootstrap (percentile method): resample the test set
+    with replacement and recompute all metrics on each resample.
+    """
+    y_true = np.asarray(y_true, dtype=int)
+    y_pred = np.asarray(y_pred, dtype=int)
+    n = len(y_true)
+    rng = np.random.default_rng(seed)
+
+    _, point = compute_binary_anomaly_metrics(y_true, y_pred)
+    skip = {"TN", "FP", "FN", "TP"}
+    metric_names = [k for k in point if k not in skip]
+    samples = {name: np.empty(n_boot, dtype=np.float64) for name in metric_names}
+
+    for b in range(n_boot):
+        idx = rng.integers(0, n, size=n)
+        _, m = compute_binary_anomaly_metrics(y_true[idx], y_pred[idx])
+        for name in metric_names:
+            samples[name][b] = m[name]
+
+    lo_q = (100.0 - ci) / 2.0
+    hi_q = 100.0 - lo_q
+
+    return {
+        name: {
+            "point": float(point[name]),
+            "ci_lo": float(np.percentile(samples[name], lo_q)),
+            "ci_hi": float(np.percentile(samples[name], hi_q)),
+        }
+        for name in metric_names
+    }
+
+def print_bootstrap_cis(name, cis, ci=BOOTSTRAP_CI):
+    print(f"\nBootstrap {ci:.0f}% CIs ({N_BOOTSTRAP} resamples) - {name}")
+    for metric, v in cis.items():
+        print(f"{metric:>12}: {v['point']:.4f} [{v['ci_lo']:.4f}, {v['ci_hi']:.4f}]")
+
+def mcnemar_from_counts(n01, n10):
+    """
+    McNemar's test on discordant counts (n01, n10).
+    Exact binomial when the number of discordant pairs is small,
+    otherwise chi-square with continuity correction.
+    """
+    n_disc = n01 + n10
+    if n_disc == 0:
+        return {"n01": 0, "n10": 0, "statistic": float("nan"),
+                "p_value": 1.0, "method": "no discordant pairs"}
+    if n_disc < 25:
+        statistic = float(min(n01, n10))
+        p_value = float(binomtest(min(n01, n10), n=n_disc, p=0.5).pvalue)
+        method = "exact binomial"
+    else:
+        statistic = (abs(n01 - n10) - 1.0) ** 2 / n_disc
+        p_value = float(chi2.sf(statistic, df=1))
+        method = "chi-square, continuity corrected"
+    return {"n01": int(n01), "n10": int(n10), "statistic": float(statistic),
+            "p_value": p_value, "method": method}
+
+def mcnemar_vs_truth(y_true, y_pred):
+    """
+    McNemar's test of marginal homogeneity between predictions and true
+    labels: tests whether FP and FN errors are symmetric.
+    """
+    y_true = np.asarray(y_true, dtype=int)
+    y_pred = np.asarray(y_pred, dtype=int)
+    fp = int(np.sum((y_true == 0) & (y_pred == 1)))
+    fn = int(np.sum((y_true == 1) & (y_pred == 0)))
+    return mcnemar_from_counts(fp, fn)
+
+def print_mcnemar(name, res, labels=("n01", "n10")):
+    print(f"\nMcNemar's test - {name}")
+    print(f"{labels[0]}: {res['n01']}, {labels[1]}: {res['n10']}")
+    print(f"method   : {res['method']}")
+    print(f"statistic: {res['statistic']:.4f}")
+    print(f"p-value  : {res['p_value']:.6f}")
+
+boot_cnn = bootstrap_metric_cis(y_test_binary, results["y_pred_binary"])
+print_bootstrap_cis("CNN (lambdaMax detector)", boot_cnn)
+
+mcnemar_cnn = mcnemar_vs_truth(y_test_binary, results["y_pred_binary"])
+print_mcnemar("CNN (FP vs FN)", mcnemar_cnn, labels=("FP", "FN"))

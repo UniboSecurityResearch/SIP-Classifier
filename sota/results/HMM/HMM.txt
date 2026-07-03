@@ -1,4 +1,3 @@
-
 ====================================================================================================
 LOADING DATA
 ====================================================================================================
@@ -57,3 +56,22 @@ FINAL SUMMARY
 
 Saved summary to baseline_results_hmm.csv
 Saved per-dialog predictions to hmm_predictions.csv
+Saved state -> benign dialog mapping to hmm_state_dialogs.csv
+
+====================================================================================================
+STATISTICAL TESTS: BOOTSTRAP CI + McNEMAR'S TEST
+====================================================================================================
+
+Bootstrap 95% CIs (1000 resamples) - Full HMM baseline
+ specificity: 0.9714 [0.9585, 0.9830]
+ sensitivity: 0.2900 [0.2414, 0.3399]
+   precision: 0.8131 [0.7368, 0.8846]
+      recall: 0.2900 [0.2414, 0.3399]
+    accuracy: 0.7670 [0.7410, 0.7920]
+          f1: 0.4275 [0.3683, 0.4821]
+
+McNemar's test - Full HMM baseline (FP vs FN)
+FP: 20, FN: 213
+method   : chi-square, continuity corrected
+statistic: 158.2146
+p-value  : 0.000000

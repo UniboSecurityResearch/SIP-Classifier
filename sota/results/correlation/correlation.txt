@@ -92,3 +92,43 @@ mcc: 0.27773186030035396
 Saved:
 - correlation_predictions.csv
 - correlation_summary.csv
+
+====================================================================================================
+STATISTICAL TESTS: BOOTSTRAP CI + McNEMAR'S TEST
+====================================================================================================
+
+Bootstrap 95% CIs (1000 resamples) - correlation_non_normalized
+ specificity: 1.0000 [1.0000, 1.0000]
+ sensitivity: 0.0000 [0.0000, 0.0000]
+   precision: 0.0000 [0.0000, 0.0000]
+      recall: 0.0000 [0.0000, 0.0000]
+    accuracy: 0.7000 [0.6730, 0.7300]
+          f1: 0.0000 [0.0000, 0.0000]
+         mcc: 0.0000 [0.0000, 0.0000]
+
+Bootstrap 95% CIs (1000 resamples) - correlation_normalized
+ specificity: 1.0000 [1.0000, 1.0000]
+ sensitivity: 0.1067 [0.0705, 0.1400]
+   precision: 1.0000 [1.0000, 1.0000]
+      recall: 0.1067 [0.0705, 0.1400]
+    accuracy: 0.7320 [0.7050, 0.7590]
+          f1: 0.1928 [0.1317, 0.2456]
+         mcc: 0.2777 [0.2264, 0.3220]
+
+McNemar's test - correlation_non_normalized (FP vs FN)
+FP: 0, FN: 300
+method   : chi-square, continuity corrected
+statistic: 298.0033
+p-value  : 0.000000
+
+McNemar's test - correlation_normalized (FP vs FN)
+FP: 0, FN: 268
+method   : chi-square, continuity corrected
+statistic: 266.0037
+p-value  : 0.000000
+
+McNemar's test - non_normalized vs normalized
+non_norm wrong / norm right: 32, non_norm right / norm wrong: 0
+method   : chi-square, continuity corrected
+statistic: 30.0312
+p-value  : 0.000000
