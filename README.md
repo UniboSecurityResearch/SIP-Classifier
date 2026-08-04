@@ -1,4 +1,5 @@
 # SIP-Classifier
+[![DOI](https://zenodo.org/badge/924094381.svg)](https://doi.org/10.5281/zenodo.15655738)
 
 This repository contains the dataset and supporting scripts used in the paper
 "SIP-Classifier: Unsupervised Classification of SIP-IMS Signaling with Transformer and Clustering".
@@ -24,5 +25,13 @@ This repository contains the dataset and supporting scripts used in the paper
 
 ## Cite us
 If you find this work interesting and use it in your academic research, please cite our paper!
+```bibtex
+@article{iacobelli2026sip,
+  title={SIP-Classifier: Unsupervised Classification of SIP-IMS Signaling with Transformer and Clustering},
+  author={Iacobelli, Antonio and Franceschelli, Giorgio and Rinieri, Lorenzo and Musolesi, Mirco and Prandini, Marco and Callegati, Franco},
+  journal={IEEE Transactions on Network and Service Management},
+  year={2026},
+  publisher={IEEE}
+}
+```
 
-[![DOI](https://zenodo.org/badge/924094381.svg)](https://doi.org/10.5281/zenodo.15655738)
